@@ -1,0 +1,59 @@
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --device "F2837xD" --part "F2837xD_337ZWT" --package "F2837xD_337ZWT" --context "CPU1" --product "C2000WARE@5.05.00.00"
+ * @v2CliArgs --device "TMS320F28379D" --package "337ZWT" --context "CPU1" --product "C2000WARE@5.05.00.00"
+ * @versions {"tool":"1.24.1+4189"}
+ */
+
+/**
+ * Import the modules used in this configuration.
+ */
+const led       = scripting.addModule("/driverlib/board_components/led", {}, false);
+const led1      = led.addInstance();
+const led2      = led.addInstance();
+const cputimer  = scripting.addModule("/driverlib/cputimer.js", {}, false);
+const cputimer1 = cputimer.addInstance();
+const sci       = scripting.addModule("/driverlib/sci.js", {}, false);
+const sci1      = sci.addInstance();
+
+/**
+ * Write custom configuration values to the imported modules.
+ */
+led1.$name                  = "myBoardLED0";
+led1.gpio.$name             = "OPLED_BL";
+led1.gpio.writeInitialValue = true;
+led1.gpio.initialValue      = 1;
+led1.gpio.gpioPin.$assign   = "GPIO31";
+
+led2.$name                  = "myBoardLED1";
+led2.gpio.$name             = "OPLED_RD";
+led2.gpio.writeInitialValue = true;
+led2.gpio.initialValue      = 1;
+led2.gpio.gpioPin.$assign   = "GPIO34";
+
+const divider3       = system.clockTree["EPWMCLKDIV"];
+divider3.divideValue = 1;
+
+const divider5       = system.clockTree["SYSCLKDIVSEL"];
+divider5.divideValue = 4;
+
+cputimer1.$name                    = "myCPUTIMER0";
+cputimer1.timerPrescaler           = 999;
+cputimer1.enableInterrupt          = true;
+cputimer1.registerInterrupts       = true;
+cputimer1.startTimer               = true;
+cputimer1.timerPeriod              = 99;
+cputimer1.timerInt.enableInterrupt = true;
+
+sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
+sci1.$name                      = "mySCIB";
+sci1.enabledFIFOInterrupts      = ["SCI_INT_RXFF","SCI_INT_TXFF"];
+sci1.rxFifo                     = "SCI_FIFO_RX1";
+sci1.sci.$assign                = "SCIB";
+sci1.sci.scirxdPin.$assign      = "GPIO19";
+sci1.sci.scitxdPin.$assign      = "GPIO18";
+sci1.rxQual.$name               = "myGPIOQUAL0";
+sci1.txQual.$name               = "myGPIOQUAL1";
+sci1.sciRXInt.enableInterrupt   = true;
+sci1.sciTXInt.enableInterrupt   = true;
