@@ -53,7 +53,9 @@
 #include "c2000ware_libraries.h"
 
 
+#include "[COMMON]/common.h"
 #include "[API]/timer/api_tim.h"
+#include "[API]/srl/api_srl.h"
 
 #define ARRAY_LEN(x)    (sizeof(x)/sizeof((x)[0]))
 
@@ -79,7 +81,7 @@ struct
 	SCI_clearInterruptStatus(mySCIB_BASE, SCI_INT_TXFF);	
 }
 
-#else
+#elif 0
  __interrupt void INT_mySCIB_TX_ISR(void)
 {
     GPIO_togglePin(OPLED_BL);
@@ -121,14 +123,10 @@ void TxTest(void)
     SCI_enableInterrupt(mySCIB_BASE, SCI_INT_TXFF);
 }
 #endif
- __interrupt void INT_mySCIB_RX_ISR(void)
-{
-
-  Interrupt_clearACKGroup(INT_mySCIB_RX_INTERRUPT_ACK_GROUP);
-}
 
 
-
+ //const uint16_t datArr[] = {'1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','\r','\n'};
+ const uint16_t datArr[] = {'1','2','3','4','5','\r','\n'};
 //
 // Main
 //
@@ -172,10 +170,11 @@ void main(void)
     EINT;
     ERTM;
 
-    stApiTimer t1,t2;
+    stApiTimer t1,t2,tForceBusy;
 
-    ApiTimerStart(&t1, 100,2000);
-    ApiTimerStart(&t2, 500,2000);
+    ApiTimerStart(&t1, 100,200);
+    ApiTimerStart(&t2, 500,2);
+    ApiTimerStart(&tForceBusy, 500,5);
 
 
     GPIO_writePin(OPLED_BL, 1);
@@ -184,17 +183,24 @@ void main(void)
     {
         if(ApiTimerGetExpire(&t1))
         {
-            TxTest();
+            if(ApiSrlChkRxEmpty(API_SRLB) == false)
+            {
+                int readCntTot = 0;
+                int readCnt;
+                uint8_t dat[256];
+                while(readCnt = ApiSrlRead(API_SRLB, dat, ARRAY_LEN(dat)))
+                    readCntTot += readCnt;
+                ApiSrlPrintf("RxCnt: %u \r\n", readCntTot);
+                ApiSrlPrintf("RX[1-10]: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n\r\n", dat[0], dat[1], dat[2], dat[3], dat[4], dat[5], dat[6], dat[7], dat[8], dat[9]);
+            }
         }
 
-        if(ApiTimerGetExpire(&t2))
-        {
-            
+        if(ApiTimerGetExpire(&tForceBusy))
+        {    
+            DINT;
+            DEVICE_DELAY_US(500);
+            EINT;
         }
-        //     GPIO_togglePin(OPLED_RD);
-
-        // if(ApiTimerGetExpire(&t2))
-        //     GPIO_togglePin(OPLED_BL);
     }
 }
 

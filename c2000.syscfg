@@ -14,6 +14,8 @@ const led1      = led.addInstance();
 const led2      = led.addInstance();
 const cputimer  = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1 = cputimer.addInstance();
+const gpio      = scripting.addModule("/driverlib/gpio.js", {}, false);
+const gpio3     = gpio.addInstance();
 const sci       = scripting.addModule("/driverlib/sci.js", {}, false);
 const sci1      = sci.addInstance();
 
@@ -45,6 +47,10 @@ cputimer1.registerInterrupts       = true;
 cputimer1.startTimer               = true;
 cputimer1.timerPeriod              = 99;
 cputimer1.timerInt.enableInterrupt = true;
+
+gpio3.direction       = "GPIO_DIR_MODE_OUT";
+gpio3.$name           = "DBG_P32";
+gpio3.gpioPin.$assign = "GPIO32";
 
 sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
 sci1.$name                      = "mySCIB";
