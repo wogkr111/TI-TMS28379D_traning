@@ -57,76 +57,14 @@
 #include "[API]/timer/api_tim.h"
 #include "[API]/srl/api_srl.h"
 
-#define ARRAY_LEN(x)    (sizeof(x)/sizeof((x)[0]))
 
-struct
+
+__interrupt void INT_myEPWM1_ISR(void)
 {
-    int tail;
-    int head;
-    uint16_t buf[512];
-}myFifo = {0,};
-
-
-#if 0
- __interrupt void INT_mySCIB_TX_ISR(void)
-{
-    GPIO_togglePin(OPLED_BL);
-    Interrupt_clearACKGroup(INT_mySCIB_TX_INTERRUPT_ACK_GROUP);
+    EPWM_clearEventTriggerInterruptFlag(myEPWM1_BASE);
+    Interrupt_clearACKGroup(INT_myEPWM1_INTERRUPT_ACK_GROUP);
 }
 
-  void TxTest(void)
-{
-    const uint16_t datArr[] = {'1','2','3','4','5','6','\r','\n'};
-    SCI_writeCharArray(mySCIB_BASE, datArr, ARRAY_LEN(datArr));
-	SCI_clearInterruptStatus(mySCIB_BASE, SCI_INT_TXFF);	
-}
-
-#elif 0
- __interrupt void INT_mySCIB_TX_ISR(void)
-{
-    GPIO_togglePin(OPLED_BL);
-
-    SCI_clearInterruptStatus(mySCIB_BASE, SCI_INT_TXFF);
-
-    if(myFifo.tail != myFifo.head) // next data
-    {
-        uint16_t txBuf[15], len;
-
-        for(len = 0; len < ARRAY_LEN(txBuf); len++)
-        {
-            txBuf[len] = myFifo.buf[myFifo.tail];
-            myFifo.tail = (myFifo.tail + 1) % ARRAY_LEN(myFifo.buf);
-            if(myFifo.tail == myFifo.head)
-                break;
-        }
-        SCI_writeCharArray(mySCIB_BASE, txBuf, len);
-    }
-    else // fifo end
-    {
-        SCI_disableInterrupt(mySCIB_BASE, SCI_INT_TXFF);
-    }
-
-    Interrupt_clearACKGroup(INT_mySCIB_TX_INTERRUPT_ACK_GROUP);
-}
-
-void TxTest(void)
-{
-    const uint16_t datArr[] = {'1','2','3','4','5','6','\r','\n'};
-
-    // 인터럽트 예외처리 필요
-    for(int j = 0; j < 5; j++)
-        for (int i = 0; i < ARRAY_LEN(datArr); i++)
-        {
-            myFifo.buf[myFifo.head] = datArr[i];
-            myFifo.head = (myFifo.head + 1) % ARRAY_LEN(myFifo.buf);
-        }
-    SCI_enableInterrupt(mySCIB_BASE, SCI_INT_TXFF);
-}
-#endif
-
-
- //const uint16_t datArr[] = {'1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','1','2','3','4','5','6','\r','\n'};
- const uint16_t datArr[] = {'1','2','3','4','5','\r','\n'};
 //
 // Main
 //
@@ -170,6 +108,7 @@ void main(void)
     EINT;
     ERTM;
 
+    //USER CODE
     stApiTimer t1,t2,tForceBusy;
 
     ApiTimerStart(&t1, 100,200);
@@ -178,6 +117,7 @@ void main(void)
 
 
     GPIO_writePin(OPLED_BL, 1);
+    EPWM_disableInterrupt(myEPWM1_BASE);
 
     while(1)
     {
@@ -190,17 +130,27 @@ void main(void)
                 uint8_t dat[256];
                 while(readCnt = ApiSrlRead(API_SRLB, dat, ARRAY_LEN(dat)))
                     readCntTot += readCnt;
-                ApiSrlPrintf("RxCnt: %u \r\n", readCntTot);
+                //ApiSrlPrintf("RxCnt: %u \r\n", readCntTot);
                 ApiSrlPrintf("RX[1-10]: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n\r\n", dat[0], dat[1], dat[2], dat[3], dat[4], dat[5], dat[6], dat[7], dat[8], dat[9]);
             }
         }
 
+        if(ApiTimerGetExpire(&t2))
+        {
+            static int prd = 0;
+            prd = (prd+1)%1000;
+            EPWM_setCounterCompareValue(myEPWM1_BASE, EPWM_COUNTER_COMPARE_B, prd);	
+        }
+
+
+#if USE_FORCE_IDS_DISABLE_BUSY == true
         if(ApiTimerGetExpire(&tForceBusy))
         {    
             DINT;
             DEVICE_DELAY_US(500);
             EINT;
         }
+#endif
     }
 }
 

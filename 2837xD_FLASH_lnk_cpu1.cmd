@@ -22,7 +22,8 @@ PAGE 0 :  /* Program Memory */
 
    /* Flash sectors */
    FLASHA           : origin = 0x080002, length = 0x001FFE	/* on-chip Flash */
-   FLASHB           : origin = 0x082000, length = 0x002000	/* on-chip Flash */
+   FLASHB_PIECE     : origin = 0x082000, length = 0x000040	/* on-chip Flash */
+   FLASHB           : origin = 0x082040, length = 0x001FC0	/* on-chip Flash */
    FLASHC           : origin = 0x084000, length = 0x002000	/* on-chip Flash */
    FLASHD           : origin = 0x086000, length = 0x002000	/* on-chip Flash */
    FLASHE           : origin = 0x088000, length = 0x008000	/* on-chip Flash */
@@ -79,7 +80,7 @@ PAGE 1 : /* Data Memory */
 SECTIONS
 {
    /* Allocate program areas: */
-   .cinit              : > FLASHB      PAGE = 0, ALIGN(8)
+   .cinit              : > FLASHB_PIECE      PAGE = 0, ALIGN(8)
    .text               : >> FLASHB | FLASHC | FLASHD | FLASHE      PAGE = 0, ALIGN(8)
    codestart           : > BEGIN       PAGE = 0, ALIGN(8)
    /* Allocate uninitalized data sections: */
