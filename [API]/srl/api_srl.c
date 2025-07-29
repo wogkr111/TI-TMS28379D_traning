@@ -24,6 +24,16 @@ stSwFifo swRxFifo[API_SRL_END] = {{0,}};
 
 
 
+// TX COMPLETE
+__interrupt void INT_myECAP0_ISR(void)
+{
+    ECAP_stopCounter(myECAP0_BASE);
+    ECAP_clearInterrupt(myECAP0_BASE, ECAP_ISR_SOURCE_COUNTER_PERIOD);
+    ECAP_clearGlobalInterrupt(myECAP0_BASE);
+    Interrupt_clearACKGroup(INT_myECAP0_INTERRUPT_ACK_GROUP);
+}
+
+
  __interrupt void INT_mySCIB_TX_ISR(void)
 {
     stSwFifo * const swFifo = swTxFifo + API_SRLB;
@@ -46,6 +56,8 @@ stSwFifo swRxFifo[API_SRL_END] = {{0,}};
     else // sw fifo end
     {
         SCI_disableInterrupt(sciBase, SCI_INT_TXFF);
+        HWREGH(myECAP0_BASE + ECAP_O_TSCTR) = 0; // ECAP Counter Clear
+        ECAP_startCounter(myECAP0_BASE); // for TX COMPLETE EVENT (RS485 DE PIN CLEAR)
     }
 
     SCI_clearInterruptStatus(sciBase, SCI_INT_TXFF);

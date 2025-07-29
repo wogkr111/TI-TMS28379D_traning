@@ -14,6 +14,8 @@ const led1      = led.addInstance();
 const led2      = led.addInstance();
 const cputimer  = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1 = cputimer.addInstance();
+const ecap      = scripting.addModule("/driverlib/ecap.js", {}, false);
+const ecap1     = ecap.addInstance();
 const epwm      = scripting.addModule("/driverlib/epwm.js", {}, false);
 const epwm1     = epwm.addInstance();
 const epwm2     = epwm.addInstance();
@@ -52,6 +54,14 @@ cputimer1.registerInterrupts       = true;
 cputimer1.startTimer               = true;
 cputimer1.timerPeriod              = 99;
 cputimer1.timerInt.enableInterrupt = true;
+
+ecap1.$name                   = "myECAP0";
+ecap1.registerInterrupts      = true;
+ecap1.enableInterrupt         = true;
+ecap1.ecapMode                = "APWM";
+ecap1.interruptSourceAPWM     = ["ECAP_ISR_SOURCE_COUNTER_PERIOD"];
+ecap1.apwmPeriod              = 13000;
+ecap1.ecapInt.enableInterrupt = true;
 
 epwm1.epwmTimebase_counterMode                                 = "EPWM_COUNTER_MODE_UP";
 epwm1.epwmTimebase_period                                      = 999;
