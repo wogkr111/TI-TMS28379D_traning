@@ -165,15 +165,15 @@ a single CPU should be defined."
 // Define to pass to SysCtl_setClock(). Will configure the clock as follows:
 // PLLSYSCLK = 20MHz (XTAL_OSC) * 20 (IMULT) * 1 (FMULT) / 2 (PLLCLK_BY_2)
 //
-#define DEVICE_SETCLOCK_CFG         (SYSCTL_OSCSRC_XTAL | SYSCTL_IMULT(20) |  \
-                                     SYSCTL_FMULT_NONE | SYSCTL_SYSDIV(2) |   \
+#define DEVICE_SETCLOCK_CFG         (SYSCTL_OSCSRC_XTAL | SYSCTL_IMULT(40) |  \
+                                     SYSCTL_FMULT_NONE | SYSCTL_SYSDIV(4) |   \
                                      SYSCTL_PLL_ENABLE)
 
 //
 // 200MHz SYSCLK frequency based on the above DEVICE_SETCLOCK_CFG. Update the
 // code below if a different clock configuration is used!
 //
-#define DEVICE_SYSCLK_FREQ          ((DEVICE_OSCSRC_FREQ * 20 * 1) / 2)
+#define DEVICE_SYSCLK_FREQ          ((DEVICE_OSCSRC_FREQ * 40 * 1) / 4)
 
 #endif
 
@@ -182,7 +182,7 @@ a single CPU should be defined."
 // low speed peripheral clock divider of 4. Update the code below if a
 // different LSPCLK divider is used!
 //
-#define DEVICE_LSPCLK_FREQ          (DEVICE_SYSCLK_FREQ / 4)
+#define DEVICE_LSPCLK_FREQ          (DEVICE_SYSCLK_FREQ / 2)
 
 //*****************************************************************************
 //

@@ -53,10 +53,10 @@
 #include "c2000ware_libraries.h"
 
 
-#include "[COMMON]/common.h"
+#include "common.h"
 #include "[API]/timer/api_tim.h"
 #include "[API]/srl/api_srl.h"
-
+#include "[API]/flash/api_flash.h"
 
 
 __interrupt void INT_myEPWM1_ISR(void)
@@ -65,9 +65,8 @@ __interrupt void INT_myEPWM1_ISR(void)
     Interrupt_clearACKGroup(INT_myEPWM1_INTERRUPT_ACK_GROUP);
 }
 
-//
-// Main
-//
+
+
 void main(void)
 {
 
@@ -109,15 +108,22 @@ void main(void)
     ERTM;
 
     //USER CODE
-    stApiTimer t1,t2,tForceBusy;
+    //FLASH_init();
+
+    stApiTimer t1,t2, t3;
 
     ApiTimerStart(&t1, 100,200);
     ApiTimerStart(&t2, 500,2);
-    ApiTimerStart(&tForceBusy, 500,5);
+    ApiTimerStart(&t3, 1000,5000);
 
 
     GPIO_writePin(OPLED_BL, 1);
     EPWM_disableInterrupt(myEPWM1_BASE);
+
+
+    ApiSrlPrintf("[%s %s] [%s (%u)] Hellow world\r\n", __DATE__, __TIME__, __FILE__, __LINE__);
+    DEVICE_DELAY_US(10000);
+
 
     while(1)
     {
@@ -130,8 +136,7 @@ void main(void)
                 uint8_t dat[256];
                 while(readCnt = ApiSrlRead(API_SRLB, dat, ARRAY_LEN(dat)))
                     readCntTot += readCnt;
-                //ApiSrlPrintf("RxCnt: %u \r\n", readCntTot);
-                ApiSrlPrintf("RX[1-10]: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n\r\n", dat[0], dat[1], dat[2], dat[3], dat[4], dat[5], dat[6], dat[7], dat[8], dat[9]);
+                ApiSrlPrintf("RxCnt: %u \r\n", readCntTot);
             }
         }
 
@@ -144,11 +149,19 @@ void main(void)
 
 
 #if USE_FORCE_IDS_DISABLE_BUSY == true
-        if(ApiTimerGetExpire(&tForceBusy))
-        {    
-            DINT;
-            DEVICE_DELAY_US(500);
-            EINT;
+        {   
+            #warning FORCED_BUSY_ENABLE
+            static stApiTimer tForceBusy;
+            if(tForceBusy.mode != API_TIMER_CONTINUE)
+            {
+                ApiTimerStart(&tForceBusy, 500,5);
+            }
+            else if(ApiTimerGetExpire(&tForceBusy))
+            {
+                DINT;
+                DEVICE_DELAY_US(500);
+                EINT;
+            }
         }
 #endif
     }

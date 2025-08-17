@@ -28,7 +28,8 @@ PAGE 0 :  /* Program Memory */
    FLASHD           : origin = 0x086000, length = 0x002000	/* on-chip Flash */
    FLASHE           : origin = 0x088000, length = 0x008000	/* on-chip Flash */
    FLASHF           : origin = 0x090000, length = 0x008000	/* on-chip Flash */
-   FLASHG           : origin = 0x098000, length = 0x008000	/* on-chip Flash */
+   //FLASHG           : origin = 0x098000, length = 0x008000	/* on-chip Flash */
+   FLASHG_           : origin = 0x098000, length = 0x008000	/* on-chip Flash */
    FLASHH           : origin = 0x0A0000, length = 0x008000	/* on-chip Flash */
    FLASHI           : origin = 0x0A8000, length = 0x008000	/* on-chip Flash */
    FLASHJ           : origin = 0x0B0000, length = 0x008000	/* on-chip Flash */
@@ -114,6 +115,8 @@ SECTIONS
    ramgs0           : > RAMGS0,     PAGE = 1
    ramgs1           : > RAMGS1,     PAGE = 1
    ramgsRarge     : > RAMGSRarge,     PAGE = 1
+
+   .MY_BOOT_DATA  : > FLASHG_,      PAGE = 0
 
 #ifdef __TI_COMPILER_VERSION__
     #if __TI_COMPILER_VERSION__ >= 15009000

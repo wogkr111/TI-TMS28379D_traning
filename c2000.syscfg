@@ -21,6 +21,8 @@ const epwm1     = epwm.addInstance();
 const epwm2     = epwm.addInstance();
 const epwm3     = epwm.addInstance();
 const epwm4     = epwm.addInstance();
+const flash     = scripting.addModule("/driverlib/flash.js", {}, false);
+const flash1    = flash.addInstance();
 const gpio      = scripting.addModule("/driverlib/gpio.js", {}, false);
 const gpio3     = gpio.addInstance();
 const sci       = scripting.addModule("/driverlib/sci.js", {}, false);
@@ -113,6 +115,8 @@ epwm4.epwmTimebase_syncOutPulseMode = "EPWM_SYNC_OUT_PULSE_ON_EPWMxSYNCIN";
 epwm4.epwm.$assign                  = "EPWM5";
 epwm4.epwm.epwm_aPin.$assign        = "GPIO8";
 epwm4.epwm.epwm_bPin.$assign        = "GPIO9";
+
+flash1.$name = "myFMC0";
 
 gpio3.direction       = "GPIO_DIR_MODE_OUT";
 gpio3.$name           = "DBG_P32";
