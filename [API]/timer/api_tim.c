@@ -68,16 +68,16 @@ void ApiTimerStop(stApiTimer *tim)
 // return : The remaining time in ms (0 =  expired or stopped).
 uint32_t ApiTimerGetRemainigTick(stApiTimer *tim) 
 {
-  uint32_t remaningTick;
+  uint32_t remainingTick;
 
   if((tim->mode != API_TIMER_STOP) && ((uint32_t)(sysTick - tim->nextTick) >= (UINT32_MAX / 2)))
   {
-    remaningTick = tim->nextTick - sysTick;
+    remainingTick = tim->nextTick - sysTick;
   }
   else
   {
-    remaningTick = 0;
+    remainingTick = 0;
   }
   
-  return remaningTick;
+  return remainingTick;
 }

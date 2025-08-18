@@ -5,6 +5,9 @@
 #include "F021_F2837xD_C28x.h"
 
 
+#pragma DATA_ALIGN(write8WordBuf, 8)
+uint16_t write8WordBuf[8];
+
 #ifdef _FLASH
 #pragma CODE_SECTION(ApiFlashInit, ".TI.ramfunc")
 #endif
@@ -75,7 +78,6 @@ int ApiFlashWrite(uint16_t* writeAdr, uint16_t*datBuf, uint32_t len)
 {
     Fapi_StatusType oReturnCheck;
     Fapi_FlashStatusType oFlashStatus;
-    uint8_t write8wordBuf[8];
     int ret = 0;
 
     EALLOW;
@@ -83,11 +85,11 @@ int ApiFlashWrite(uint16_t* writeAdr, uint16_t*datBuf, uint32_t len)
     while(len != 0)
     {
         int i, writeLen = (len > 8)? 8 : len;
-        for(i = 0; i < writeLen; i++)   write8wordBuf[i] = *datBuf++;
-        for(; i < 8; i++)               write8wordBuf[i] = 0xFFFF;
+        for(i = 0; i < writeLen; i++)   write8WordBuf[i] = *datBuf++;
+        for(; i < 8; i++)               write8WordBuf[i] = 0xFFFF;
 
         // Issue program command
-        oReturnCheck = Fapi_issueProgrammingCommand((uint32 *)writeAdr, write8wordBuf, 8, 0, 0, Fapi_AutoEccGeneration);
+        oReturnCheck = Fapi_issueProgrammingCommand((uint32 *)writeAdr, write8WordBuf, 8, 0, 0, Fapi_AutoEccGeneration);
 
         // Wait until the Flash program operation is over
         while (Fapi_checkFsmForReady() != Fapi_Status_FsmReady){}
