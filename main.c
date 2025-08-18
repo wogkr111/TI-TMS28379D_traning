@@ -114,7 +114,7 @@ void main(void)
 
     ApiTimerStart(&t1, 100,200);
     ApiTimerStart(&t2, 500,2);
-    ApiTimerStart(&t3, 1000,5000);
+    ApiTimerStart(&t3, 100,200);
 
 
     GPIO_writePin(OPLED_BL, 1);
@@ -123,7 +123,6 @@ void main(void)
 
     ApiSrlPrintf("[%s %s] [%s (%u)] Hellow world\r\n", __DATE__, __TIME__, __FILE__, __LINE__);
     DEVICE_DELAY_US(10000);
-
 
     while(1)
     {
@@ -145,6 +144,13 @@ void main(void)
             static int prd = 0;
             prd = (prd+1)%1000;
             EPWM_setCounterCompareValue(myEPWM1_BASE, EPWM_COUNTER_COMPARE_B, prd);	
+        }
+
+        if(ApiTimerGetExpire(&t3))
+        {
+            static int c = 0;
+            GPIO_togglePin(DBG_P32);
+            ApiSrlPrintf("%u\r\n", c++);
         }
 
 
