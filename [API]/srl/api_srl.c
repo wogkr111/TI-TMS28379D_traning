@@ -154,8 +154,11 @@ bool ApiSrlChkRxEmpty(eApiSrlCh ch) // true : rx is empty
     return rxFifoEmpty;
 }
 
+#ifndef _FLASH
 #pragma DATA_SECTION(printfBuf, "ramgsRarge")
+#endif
 static char printfBuf[512];
+
 int ApiSrlPrintf(const char* str, ...) // only SRLB
 {
     va_list ap;

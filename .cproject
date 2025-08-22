@@ -21,7 +21,7 @@
                 </extensions>
             </storageModule>
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-                <configuration artifactExtension="out" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.C2000.Default.1554254844" name="CPU1_RAM" parent="com.ti.ccstudio.buildDefinitions.C2000.Default">
+                <configuration artifactExtension="out" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.C2000.Default.1554254844" name="CPU1_RAM" parent="com.ti.ccstudio.buildDefinitions.C2000.Default" preannouncebuildStep="" prebuildStep="cd;copy /b &quot;..\main.c&quot; +,,">
                     <folderInfo id="com.ti.ccstudio.buildDefinitions.C2000.Default.1554254844." name="/" resourcePath="">
                         <toolChain id="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.DebugToolchain.1491589761" name="TI Build Tools" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.DebugToolchain" targetTool="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.linkerDebug.26703681">
                             <option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.1100761003" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS" valueType="stringList">

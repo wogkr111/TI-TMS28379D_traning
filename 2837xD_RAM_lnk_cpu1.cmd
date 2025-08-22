@@ -11,7 +11,7 @@ PAGE 0 :
    RAMLS1           : origin = 0x008800, length = 0x000800
    RAMLS2           : origin = 0x009000, length = 0x000800
    RAMLS3           : origin = 0x009800, length = 0x000800
-   RAMLS4           : origin = 0x00A000, length = 0x000800
+   //RAMLS4           : origin = 0x00A000, length = 0x000800
    RESET            : origin = 0x3FFFC0, length = 0x000002
    RAMGS678      : origin = 0x012000, length = 0x003000
    //RAMGS7      : origin = 0x013000, length = 0x001000
@@ -44,6 +44,7 @@ PAGE 1 :
 //   RAMM1_RSVD      : origin = 0x0007F8, length = 0x000008     /* Reserve and do not use for code as per the errata advisory "Memory: Prefetching Beyond Valid Memory" */
    RAMD1           : origin = 0x00B800, length = 0x000800
 
+   RAMLS4      : origin = 0x00A000, length = 0x000800
    RAMLS5      : origin = 0x00A800, length = 0x000800
 
    RAMGS0      : origin = 0x00C000, length = 0x001000
@@ -86,19 +87,19 @@ PAGE 1 :
 SECTIONS
 {
    codestart        : > BEGIN,     PAGE = 0
-   .text            : >> RAMD0 |  RAMLS0 | RAMLS1 | RAMLS2 | RAMLS3 | RAMLS4 | RAMGS678 | RAMGS9 | RAMGS10,   PAGE = 0
+   .text            : >> RAMD0 |  RAMLS0 | RAMLS1 | RAMLS2 | RAMLS3 | RAMGS678 | RAMGS9 | RAMGS10,   PAGE = 0
    .cinit           : > RAMM0,     PAGE = 0
    .switch          : > RAMM0,     PAGE = 0
    .reset           : > RESET,     PAGE = 0, TYPE = DSECT /* not used, */
    .stack           : > RAMM1,     PAGE = 1
 
 #if defined(__TI_EABI__)
-   .bss             : > RAMLS5,    PAGE = 1
+   .bss             : >> RAMLS4 | RAMLS5,    PAGE = 1
    .bss:output      : > RAMLS3,    PAGE = 0
    .init_array      : > RAMM0,     PAGE = 0
-   .const           : > RAMLS5,    PAGE = 1
-   .data            : > RAMLS5,    PAGE = 1
-   .sysmem          : > RAMLS5,    PAGE = 1
+   .const           : >> RAMLS4 | RAMLS5,    PAGE = 1
+   .data            : >> RAMLS4 | RAMLS5,    PAGE = 1
+   .sysmem          : >> RAMLS4 | RAMLS5,    PAGE = 1
 #else
    .pinit           : > RAMM0,     PAGE = 0
    .ebss            : > RAMLS5,    PAGE = 1
