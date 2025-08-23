@@ -1,10 +1,7 @@
-#include "board.h"
-
-#include "api_srl.h"
-
-#include <stdint.h>
-#include <stdio.h>
 #include "[COMMON]/common.h"
+#include "api_srl.h"
+#include <stdio.h>
+
 
 const uint32_t sciBaseArr[API_SRL_END] =  {mySCIB_BASE};
 const uint32_t sciTxAckGrpArr[API_SRL_END] =  {INT_mySCIB_TX_INTERRUPT_ACK_GROUP};
@@ -24,6 +21,43 @@ stSwFifo swRxFifo[API_SRL_END] = {{0,}};
 
 
 
+inline static int getTxUsedSize(eApiSrlCh ch)
+{
+    uint16_t used_size = (swTxFifo[ch].head - swTxFifo[ch].tail) & (ARRAY_LEN(swTxFifo[0].buf) - 1);
+    return used_size;
+}
+inline static int getTxFreeSize(eApiSrlCh ch)
+{
+    return (ARRAY_LEN(swTxFifo[0].buf) - 1) - getTxUsedSize(ch);
+}
+inline static int getRxUsedSize(eApiSrlCh ch)
+{
+    uint16_t used_size = (swRxFifo[ch].head - swRxFifo[ch].tail) & (ARRAY_LEN(swRxFifo[0].buf) - 1);
+    return used_size;
+}
+inline static int getRxFreeSize(eApiSrlCh ch)
+{
+    return (ARRAY_LEN(swRxFifo[0].buf) - 1) - getRxUsedSize(ch);
+}
+
+inline static void My_SCI_writeCharArray(uint32_t base, const uint16_t * const array, uint16_t length)
+{
+    uint16_t i;
+    for(i = 0U; i < length; i++)
+        HWREGH(base + SCI_O_TXBUF) = array[i];
+}
+
+// Warning: This function doesn't consider 'len' and the FIFO free size.
+inline static void RxFifoPush(eApiSrlCh ch,  uint8_t* src, int len)
+{
+    for(int i = 0; i < len; i++)
+    {
+        swRxFifo[ch].buf[swRxFifo[ch].head] = src[i];
+        swRxFifo[ch].head = (swRxFifo[ch].head + 1) & (ARRAY_LEN(swRxFifo[0].buf) - 1);
+    }
+}
+
+
 // TX COMPLETE
 __interrupt void INT_myECAP0_ISR(void)
 {
@@ -36,22 +70,27 @@ __interrupt void INT_myECAP0_ISR(void)
 
  __interrupt void INT_mySCIB_TX_ISR(void)
 {
-    stSwFifo * const swFifo = swTxFifo + API_SRLB;
     const uint32_t sciBase = sciBaseArr[API_SRLB];
-    const uint16_t isrAckGrp = sciTxAckGrpArr[API_SRLB];
+    const uint32_t isrAckGrp = sciTxAckGrpArr[API_SRLB];
     
-    if(swFifo->tail != swFifo->head) // is next data
+    int usedSize;
+    if((usedSize = getTxUsedSize(API_SRLB)) > 0) // is next data
     {
-        uint16_t txBuf[15], len;
+        // SCI_writeCharArray 는 매우 느림!!
+        // SCI_writeCharArray 를 사용한다면, 최대 길이를 15로 설정할것
+        // My_SCI_writeCharArray 는 SCI FIFO 설정이 옳바르며, 이 ISR 진입시점에서 TI FIFO가 완전히 비어있음을 가정하고 있음 
+        int len = (usedSize > 16)? 16 : usedSize;
 
-        for(len = 0; len < ARRAY_LEN(txBuf); len++)
+        if((ARRAY_LEN(swRxFifo[API_SRLB].buf) - swTxFifo[API_SRLB].tail) <= len)
         {
-            txBuf[len] = swFifo->buf[swFifo->tail];
-            swFifo->tail = (swFifo->tail + 1) % ARRAY_LEN(swFifo->buf);
-            if(swFifo->tail == swFifo->head)
-                break;
+            int fstLen = ARRAY_LEN(swTxFifo[API_SRLB].buf) - swTxFifo[API_SRLB].tail;
+            My_SCI_writeCharArray(sciBase, swTxFifo[API_SRLB].buf + swTxFifo[API_SRLB].tail, fstLen);
+            swTxFifo[API_SRLB].tail = 0;
+            len -= fstLen;
         }
-        SCI_writeCharArray(sciBase, txBuf, len);
+
+        My_SCI_writeCharArray(sciBase, swTxFifo[API_SRLB].buf + swTxFifo[API_SRLB].tail, len);
+        swTxFifo[API_SRLB].tail += len;
     }
     else // sw fifo end
     {
@@ -66,24 +105,15 @@ __interrupt void INT_myECAP0_ISR(void)
 
  __interrupt void INT_mySCIB_RX_ISR(void)
 {
-    stSwFifo * const swFifo = swRxFifo + API_SRLB;
     const uint32_t sciBase = sciBaseArr[API_SRLB];
     const uint16_t isrAckGrp = sciRxAckGrpArr[API_SRLB];
     
     uint16_t rxArr[16];
-    uint16_t cnt = 0, readLen = SCI_getRxFIFOStatus(sciBase);
+    uint16_t readLen = SCI_getRxFIFOStatus(sciBase);
     SCI_readCharArray(sciBase, rxArr, readLen);
 
-    while(1)
-    {
-        uint16_t nextHead = (swFifo->head + 1) % ARRAY_LEN(swFifo->buf);
-
-        if((nextHead == swFifo->tail) || (cnt == readLen))
-            break;
-        
-        swFifo->buf[swFifo->head] = rxArr[cnt++];
-        swFifo->head = nextHead;
-    }
+    if(readLen <= getRxFreeSize(API_SRLB))
+        RxFifoPush(API_SRLB,  rxArr, readLen);
 
     SCI_clearOverflowStatus(sciBase);
     SCI_clearInterruptStatus(sciBase, SCI_INT_RXFF);
@@ -92,67 +122,67 @@ __interrupt void INT_myECAP0_ISR(void)
 
 int ApiSrlWrite(eApiSrlCh ch,  const uint8_t* src, int len)
 {
-    stSwFifo * const swFifo = swTxFifo + ch;
-    int writeCnt = 0;
-    bool isTxRun;
-
     DINT;
-    isTxRun = swFifo->head != swFifo->tail;
-    while(1)
-    {
-        uint16_t nextHead = (swFifo->head + 1) % ARRAY_LEN(swFifo->buf);
-
-        if((nextHead == swFifo->tail) || (writeCnt == len))
-            break;
-        
-        swFifo->buf[swFifo->head] = src[writeCnt++];
-        swFifo->head = nextHead;
-    }
+    int head_old = swTxFifo[ch].head;
+    int freeSize = getTxFreeSize(ch);
     EINT;
 
-    if(isTxRun == false)
+    if(len > freeSize)
+        return -1; // 공간 부족
+
+    int head = head_old;
+    uint16_t* buf = swTxFifo[ch].buf;
+    for(int i = 0; i < len; i++)
+    {
+        buf[head] = src[i];
+        head = (head + 1) & (ARRAY_LEN(swTxFifo[0].buf) - 1);
+    }
+
+    DINT;
+    int tail = swTxFifo[ch].tail;
+    swTxFifo[ch].head = head;
+    EINT;
+
+    if(tail == head_old) // TX FIFO start
         SCI_enableInterrupt(sciBaseArr[ch], SCI_INT_TXFF);
 
-    return writeCnt;
+    return 0;
 }
 
-int ApiSrlRead(eApiSrlCh ch, uint8_t * const  dst, int len)
-{
-    stSwFifo * const swFifo = swRxFifo + ch;
-    bool rxFifoEmpty;
 
+
+
+int ApiSrlRead(eApiSrlCh ch, uint8_t * const  dst, int _len)
+{
     DINT;
-    rxFifoEmpty = (swFifo->tail) == (swFifo->head);
+    int used_size = getRxUsedSize(ch);
+    int tail = swRxFifo[ch].tail;
     EINT;
 
-    if(rxFifoEmpty == true)
+    if(used_size == 0)
         return 0;
 
-    int readCnt = 0;
-    DINT;
-    while(1)
+    int len = used_size < _len? used_size : _len;
+    uint16_t* buf = swRxFifo[ch].buf;
+
+    for(int i = 0; i < len; i++)
     {
-        if((readCnt >= len) || ((swFifo->tail) == (swFifo->head)))
-            break;
-        dst[readCnt++] = swFifo->buf[swFifo->tail];
-        swFifo->tail = (swFifo->tail + 1) % ARRAY_LEN(swFifo->buf);
+        dst[i] = buf[tail];
+        tail = (tail + 1) & (ARRAY_LEN(swTxFifo[0].buf) - 1);
     }
-    EINT;
-
-    return readCnt;
-}
-
-bool ApiSrlChkRxEmpty(eApiSrlCh ch) // true : rx is empty
-{
-    stSwFifo * const swFifo = swRxFifo + ch;
-    bool rxFifoEmpty;
 
     DINT;
-    rxFifoEmpty = (swFifo->tail) == (swFifo->head);
+    swRxFifo[ch].tail = tail;
     EINT;
 
-    return rxFifoEmpty;
+    return len;
 }
+
+int ApiSrlRxBytesToRead(eApiSrlCh ch) // true : rx is empty
+{
+    return getRxUsedSize(ch);
+}
+
 
 #ifndef _FLASH
 #pragma DATA_SECTION(printfBuf, "ramgsRarge")

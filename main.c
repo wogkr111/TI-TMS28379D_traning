@@ -128,7 +128,7 @@ void main(void)
     {
         if(ApiTimerGetExpire(&t1))
         {
-            if(ApiSrlChkRxEmpty(API_SRLB) == false)
+            if(ApiSrlRxBytesToRead(API_SRLB) > 0)
             {
                 int readCntTot = 0;
                 int readCnt;

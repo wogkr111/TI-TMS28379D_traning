@@ -14,7 +14,7 @@ typedef enum
 
 int ApiSrlWrite(eApiSrlCh ch,  const uint8_t* src, int len);
 int ApiSrlRead(eApiSrlCh ch, uint8_t * const  dst, int len);
-bool ApiSrlChkRxEmpty(eApiSrlCh ch); // true : rx is empty
+int ApiSrlRxBytesToRead(eApiSrlCh ch);
 int ApiSrlPrintf(const char* str, ...);// only SRLB
 
 #endif /* API_SRL_H_ */
