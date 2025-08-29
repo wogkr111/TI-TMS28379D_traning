@@ -57,6 +57,7 @@
 #include "[API]/timer/api_tim.h"
 #include "[API]/srl/api_srl.h"
 #include "[API]/flash/api_flash.h"
+#include "[API]/adc/api_adc.h"
 
 
 __interrupt void INT_myEPWM1_ISR(void)
@@ -114,14 +115,14 @@ void main(void)
 
     ApiTimerStart(&t1, 100,200);
     ApiTimerStart(&t2, 500,2);
-    ApiTimerStart(&t3, 100,200);
+    ApiTimerStart(&t3, 100,25);
 
 
     GPIO_writePin(OPLED_BL, 1);
     EPWM_disableInterrupt(myEPWM1_BASE);
 
 
-    ApiSrlPrintf("[%s %s] [%s (%u)] Hellow world\r\n", __DATE__, __TIME__, __FILE__, __LINE__);
+    ApiSrlPrintf("\r\n[%s %s] [%s (%u)] Hellow world\r\n", __DATE__, __TIME__, __FILE__, __LINE__);
     DEVICE_DELAY_US(10000);
 
     while(1)
@@ -148,9 +149,8 @@ void main(void)
 
         if(ApiTimerGetExpire(&t3))
         {
-            static int c = 0;
-            GPIO_togglePin(DBG_P32);
-            ApiSrlPrintf("%u\r\n", c++);
+
+            ApiSrlPrintf("%6lu\t%u\t%u\t%u\r\n", sysTick, ApiAdcGet(API_ADCA_CH1), ApiAdcGet(API_ADCA_CH2), ApiAdcGet(API_ADCA_CH3));
         }
 
 
