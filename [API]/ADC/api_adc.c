@@ -19,9 +19,15 @@ static uint16_t adcBuf[API_ADC_END];
     switch(rrPointer)
     {
     case 15:
+    #if 1
         adcBuf[0] = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER0);
         adcBuf[1] = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
         adcBuf[2] = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER2);
+    #else
+        adcBuf[0] = *((volatile uint16_t *)0xB00);
+        adcBuf[1] = *((volatile uint16_t *)0xB01);
+        adcBuf[2] = *((volatile uint16_t *)0xB02);
+    #endif
         burstIntSource = ADC_INT_NUMBER1; // user define
         break;
     default:

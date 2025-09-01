@@ -68,6 +68,117 @@ __interrupt void INT_myEPWM1_ISR(void)
 
 
 
+#pragma DATA_SECTION(myDmaSrcBuf, "ramgs0");  // map the TX data to memory
+#pragma DATA_SECTION(myDmaDstBuf, "ramgs1");  // map the RX data to memory
+uint16_t myDmaSrcBuf[128];   // Send data buffer
+uint16_t myDmaDstBuf[128];   // Receive data buffer
+const void *myDmaSrcAdr = ADCARESULT_BASE;
+const void *myDmaDstAdr = myDmaDstBuf;
+
+ __interrupt void INT_myDMA0_ISR(void)
+ {
+    GPIO_togglePin(DBG_P32);
+    Interrupt_clearACKGroup(INT_myDMA0_INTERRUPT_ACK_GROUP);
+ }
+
+
+
+#if 0
+//#pragma DATA_SECTION(sData, "ramgs0");  // map the TX data to memory
+//#pragma DATA_SECTION(rData, "ramgs1");  // map the RX data to memory
+
+//
+// Defines
+//
+#define BURST       8       // write 8 to the register for a burst size of 8
+#define TRANSFER    16      // [(MEM_BUFFER_SIZE/(BURST)]
+
+//
+// Globals
+//
+uint16_t sData[128];   // Send data buffer
+uint16_t rData[128];   // Receive data buffer
+volatile uint16_t done;
+
+//
+// Function Prototypes
+//
+__interrupt void dmaCh6ISR(void);
+void initDMA(void);
+void error();
+
+
+
+//
+// error - Error Function which will halt the debugger
+//
+void error(void)
+{
+    ESTOP0;  //Test failed!! Stop!
+    for (;;);
+}
+
+//
+// dma_init - DMA setup for both TX and RX channels.
+//
+void initDMA()
+{
+    //
+    // Refer to dma.c for the descriptions of the following functions.
+    //
+
+    //
+    //Initialize DMA
+    //
+    DMA_initController();
+
+    const void *destAddr;
+    const void *srcAddr;
+    srcAddr = (const void *)sData;
+    destAddr = (const void *)rData;
+
+    //
+    // configure DMA CH6
+    //
+    DMA_configAddresses(DMA_CH6_BASE, destAddr, srcAddr);
+    DMA_configBurst(DMA_CH6_BASE,BURST,1,1);
+    DMA_configTransfer(DMA_CH6_BASE,TRANSFER,1,1);
+    DMA_configMode(DMA_CH6_BASE,DMA_TRIGGER_SOFTWARE, DMA_CFG_ONESHOT_DISABLE);
+    DMA_setInterruptMode(DMA_CH6_BASE,DMA_INT_AT_END);
+    DMA_enableTrigger(DMA_CH6_BASE);
+    DMA_enableInterrupt(DMA_CH6_BASE);
+}
+
+//
+// local_D_INTCH6_ISR - DMA Channel6 ISR
+//
+__interrupt void dmaCh6ISR(void)
+{
+    uint16_t i;
+
+    DMA_stopChannel(DMA_CH6_BASE);
+    // ACK to receive more interrupts from this PIE group
+    EALLOW;
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP7);
+    EDIS;
+
+    for( i = 0; i < 128; i++ )
+    {
+        //
+        // check for data integrity
+        //
+        if (rData[i] != i)
+        {
+            error();
+        }
+    }
+
+    done = 1; // Test done.
+    return;
+}
+#endif
+
+
 void main(void)
 {
 
@@ -92,6 +203,57 @@ void main(void)
     //
     Interrupt_initVectorTable();
 
+
+#if 0
+ /********************************************************************************************************************************/
+    initDMA();  // set up the dma
+
+    //
+    // Ensure DMA is connected to Peripheral Frame 2 bridge (EALLOW protected)
+    //
+    SysCtl_selectSecMaster(0, SYSCTL_SEC_MASTER_DMA);
+
+    //
+    // User specific code, enable interrupts:
+    // Initialize the data buffers
+    //
+    for(int i = 0; i < 128; i++)
+    {
+        sData[i] = i;
+        rData[i] = 0;
+    }
+
+    //
+    // Enable interrupts required for this example
+    //
+    Interrupt_enable(INT_DMA_CH6);
+    EINT;                                // Enable Global Interrupts
+    // Start DMA channel
+    DMA_startChannel(DMA_CH6_BASE);
+
+    done = 0;           // Test is not done yet
+
+    while(!done)        // wait until the DMA transfer is complete
+    {
+       DMA_forceTrigger(DMA_CH6_BASE);
+
+       DEVICE_DELAY_US(1000);
+    }
+
+    //
+    // When the DMA transfer is complete the program will stop here
+    //
+    ESTOP0;
+    while(1)
+    {
+
+    }
+    /*******************************************************************************************************************************/
+#endif
+
+    for(int i = 0; i < ARRAY_LEN(myDmaSrcBuf); i++)
+        myDmaSrcBuf[i] = i+1;
+
     //
     // PinMux and Peripheral Initialization
     //
@@ -105,6 +267,18 @@ void main(void)
     //
     // Enable Global Interrupt (INTM) and real time interrupt (DBGM)
     //
+
+
+   
+
+
+
+
+
+
+
+
+
     EINT;
     ERTM;
 
